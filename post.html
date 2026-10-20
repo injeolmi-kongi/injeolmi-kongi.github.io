@@ -86,7 +86,7 @@ async function start() {
     const state = crypto.randomUUID();
     sessionStorage.setItem('tt_state', state);
     location.href = 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({
-      client_key: cfg.client_key, response_type: 'code', redirect_uri: cfg.redirect_uri, state,
+      client_key: cfg.client_key, response_type: 'code', redirect_uri: cfg.redirect_uri, state, disable_auto_auth: 1,
       scope: 'user.info.basic,user.info.stats,video.list,video.publish,video.upload'});
   };
   if (!cfg.connected) { $('helper-msg').textContent = '아직 연결 안 됨 · Not connected yet.'; return; }
