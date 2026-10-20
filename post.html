@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kongi Studio</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; line-height: 1.6; color: #3b2a1e; background: #fbf6ec; }
+  a { color: #7c5a42; }
+  section { background: #fff; border: 1px solid #eadfcd; border-radius: 12px; padding: 16px; margin: 16px 0; }
+  button { background: #7c5a42; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+  button:disabled { background: #bba999; cursor: default; }
+  textarea, select { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid #d8c9b3; border-radius: 8px; }
+  .row { display: flex; gap: 12px; align-items: center; }
+  .muted { color: #8a7563; font-size: 14px; }
+  .avatar { width: 48px; height: 48px; border-radius: 50%; }
+  video { width: 100%; max-height: 360px; background: #000; border-radius: 8px; }
+  ul.videos { list-style: none; padding: 0; margin: 0; }
+  ul.videos li { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-top: 1px solid #f0e7d9; }
+  ul.videos img { width: 48px; height: 64px; object-fit: cover; border-radius: 6px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<h1>Kongi Studio</h1>
+<p class="muted">인절미 콩이 창작자가 완성한 애니메이션을 자기 틱톡 계정에 올리는 화면.<br>
+The creator's page for posting finished Injeolmi Kongi animations to their own TikTok account.</p>
+
+<section id="connect">
+  <h2>1. TikTok 연결 · Connect TikTok</h2>
+  <p id="helper-msg" class="muted"></p>
+  <button id="login" disabled>Continue with TikTok</button>
+</section>
+
+<section id="account" hidden>
+  <h2>2. 연결된 계정 · Connected account</h2>
+  <div class="row">
+    <img id="avatar" class="avatar" alt="">
+    <div><strong id="name"></strong><br>
+      <span class="muted">팔로워 Followers <b id="followers"></b> · 좋아요 Likes <b id="likes"></b> · 영상 Videos <b id="count"></b></span></div>
+  </div>
+  <h3>최근 영상 · Recent videos</h3>
+  <ul id="videos" class="videos"></ul>
+</section>
+
+<section id="compose" hidden>
+  <h2>3. 새 영상 올리기 · Post a new video</h2>
+  <p class="muted">게시 계정 Posting to: <b id="creator"></b></p>
+  <p><input type="file" id="file" accept="video/mp4"></p>
+  <video id="preview" controls hidden></video>
+  <p><label>캡션 Caption<br><textarea id="title" rows="4" maxlength="2200"></textarea></label></p>
+  <p><label>공개 범위 Who can view this video<br><select id="privacy"><option value="" selected disabled>선택 Select</option></select></label></p>
+  <p>허용 Allow users to:
+    <label><input type="checkbox" id="comment"> Comment</label>
+    <label><input type="checkbox" id="duet"> Duet</label>
+    <label><input type="checkbox" id="stitch"> Stitch</label></p>
+  <p><label><input type="checkbox" id="commercial"> 광고·홍보 콘텐츠 알리기 · Disclose commercial content</label></p>
+  <p id="commercial-opts" hidden>
+    <label><input type="checkbox" id="brand-organic"> Your brand</label>
+    <label><input type="checkbox" id="brand-content"> Branded content</label></p>
+  <p class="muted" id="declaration">By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank">Music Usage Confirmation</a>.</p>
+  <button id="post" disabled>Post</button>
+  <p id="status" class="muted"></p>
+</section>
+
+<p class="muted"><a href="./">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></p>
+
+<script>
+const HELPER = 'http://127.0.0.1:8765';
+const $ = id => document.getElementById(id);
+let creator = null;
+
+async function get(path) {
+  const r = await fetch(HELPER + path);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error);
+  return j;
+}
+
+async function start() {
+  let cfg;
+  try { cfg = await get('/config'); }
+  catch { $('helper-msg').textContent = '이 컴퓨터의 Kongi Studio 도우미가 꺼져 있음 · The local Kongi Studio helper is not running.'; return; }
+  $('login').disabled = false;
+  $('login').onclick = () => {
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('tt_state', state);
+    location.href = 'https://www.tiktok.com/v2/auth/authorize/?' + new URLSearchParams({
+      client_key: cfg.client_key, response_type: 'code', redirect_uri: cfg.redirect_uri, state,
+      scope: 'user.info.basic,user.info.stats,video.list,video.publish,video.upload'});
+  };
+  if (!cfg.connected) { $('helper-msg').textContent = '아직 연결 안 됨 · Not connected yet.'; return; }
+  try { await load(); }
+  catch (e) { $('helper-msg').textContent = '다시 연결 필요 · Please connect again (' + e.message + ')'; }
+}
+
+async function load() {
+  const me = (await get('/me')).user;
+  $('helper-msg').textContent = '연결됨 · Connected.';
+  $('login').textContent = 'Reconnect';
+  $('avatar').src = me.avatar_url;
+  $('name').textContent = me.display_name;
+  $('followers').textContent = me.follower_count;
+  $('likes').textContent = me.likes_count;
+  $('count').textContent = me.video_count;
+  const list = (await get('/videos')).videos || [];
+  $('videos').innerHTML = '';
+  for (const v of list) {
+    const li = document.createElement('li');
+    li.innerHTML = '<img alt=""><div><a target="_blank"></a><br><span class="muted"></span></div>';
+    li.querySelector('img').src = v.cover_image_url;
+    li.querySelector('a').href = v.share_url;
+    li.querySelector('a').textContent = (v.title || '(no title)').split('\n')[0];
+    li.querySelector('span').textContent = 'Views ' + v.view_count + ' · Likes ' + v.like_count;
+    $('videos').appendChild(li);
+  }
+  if (!list.length) $('videos').innerHTML = '<li class="muted">아직 없음 · No videos yet</li>';
+  $('account').hidden = false;
+
+  creator = await get('/creator');
+  $('creator').textContent = creator.creator_nickname + ' (@' + creator.creator_username + ')';
+  for (const p of creator.privacy_level_options) $('privacy').add(new Option(p, p));
+  $('comment').disabled = creator.comment_disabled;
+  $('duet').disabled = creator.duet_disabled;
+  $('stitch').disabled = creator.stitch_disabled;
+  $('compose').hidden = false;
+}
+
+function check() {
+  const c = $('commercial').checked;
+  $('commercial-opts').hidden = !c;
+  const branded = c && $('brand-content').checked;
+  for (const o of $('privacy').options) if (o.value === 'SELF_ONLY') o.disabled = branded;
+  if (branded && $('privacy').value === 'SELF_ONLY') $('privacy').value = '';
+  $('declaration').innerHTML = branded
+    ? "By posting, you agree to TikTok's <a href=\"https://www.tiktok.com/legal/page/global/bc-policy/en\" target=\"_blank\">Branded Content Policy</a> and <a href=\"https://www.tiktok.com/legal/page/global/music-usage-confirmation/en\" target=\"_blank\">Music Usage Confirmation</a>."
+    : "By posting, you agree to TikTok's <a href=\"https://www.tiktok.com/legal/page/global/music-usage-confirmation/en\" target=\"_blank\">Music Usage Confirmation</a>.";
+  const ok = $('file').files.length && $('privacy').value && (!c || $('brand-organic').checked || $('brand-content').checked);
+  $('post').disabled = !ok;
+}
+
+$('file').onchange = () => {
+  const f = $('file').files[0];
+  $('preview').src = URL.createObjectURL(f);
+  $('preview').hidden = false;
+  $('preview').onloadedmetadata = () => {
+    if ($('preview').duration > creator.max_video_post_duration_sec) {
+      $('status').textContent = '영상이 너무 김 · Video is longer than ' + creator.max_video_post_duration_sec + 's.';
+      $('file').value = '';
+    }
+    check();
+  };
+};
+for (const id of ['privacy', 'commercial', 'brand-organic', 'brand-content']) $(id).onchange = check;
+
+$('post').onclick = async () => {
+  $('post').disabled = true;
+  $('status').textContent = '올리는 중 · Uploading…';
+  const info = {
+    title: $('title').value, privacy_level: $('privacy').value,
+    opts: { disable_comment: !$('comment').checked, disable_duet: !$('duet').checked, disable_stitch: !$('stitch').checked,
+            brand_organic_toggle: $('commercial').checked && $('brand-organic').checked,
+            brand_content_toggle: $('commercial').checked && $('brand-content').checked }};
+  try {
+    const r = await fetch(HELPER + '/post', { method: 'POST', body: $('file').files[0],
+      headers: { 'Content-Type': 'video/mp4', 'X-Post-Info': encodeURIComponent(JSON.stringify(info)) }});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    $('status').textContent = j.status === 'PUBLISH_COMPLETE'
+      ? '게시 완료 · Posted. 틱톡에 반영되기까지 몇 분 걸릴 수 있음 · It may take a few minutes to appear on TikTok.'
+      : '상태 Status: ' + j.status + ' ' + (j.fail_reason || '');
+  } catch (e) { $('status').textContent = '실패 · Failed: ' + e.message; check(); }
+};
+
+start();
+</script>
+</body>
+</html>
