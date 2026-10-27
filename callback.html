@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Connected</title>
+<title>Injeolmi Kongi</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; line-height: 1.6; color: #3b2a1e; background: #fbf6ec; }
 </style>
@@ -14,7 +14,7 @@
 <p>이 창의 주소창 전체를 복사해서 메모장에 붙여 <code>~/.tt_code.txt</code> 로 저장하세요. 채팅에는 붙이지 마세요.</p>
 <p>Copy the full address bar of this window into the creator's local setup file. Do not share it.</p>
 </div>
-<p id="auto" hidden>Kongi Studio 로 돌아가는 중 · Returning to Kongi Studio…</p>
+<p id="auto" hidden>Injeolmi Kongi 로 돌아가는 중 · Returning to Injeolmi Kongi…</p>
 <script>
 const q = new URLSearchParams(location.search);
 const state = sessionStorage.getItem('tt_state');
@@ -22,7 +22,7 @@ if (q.get('code') && state) {
   document.getElementById('manual').hidden = true;
   document.getElementById('auto').hidden = false;
   if (q.get('state') !== state) {
-    document.getElementById('auto').textContent = '연결 확인 실패 · Connection check failed. Please try again from Kongi Studio.';
+    document.getElementById('auto').textContent = '연결 확인 실패 · Connection check failed. Please try again from Injeolmi Kongi.';
   } else {
     sessionStorage.removeItem('tt_state');
     fetch('http://127.0.0.1:8765/exchange', { method: 'POST', body: JSON.stringify({ code: q.get('code') }) })

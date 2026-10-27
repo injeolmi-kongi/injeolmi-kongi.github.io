@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kongi Studio</title>
+<title>Injeolmi Kongi</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; line-height: 1.6; color: #3b2a1e; background: #fbf6ec; }
   a { color: #7c5a42; }
@@ -22,7 +22,7 @@
 </style>
 </head>
 <body>
-<h1>Kongi Studio</h1>
+<h1>Injeolmi Kongi</h1>
 <p class="muted">인절미 콩이 창작자가 완성한 애니메이션을 자기 틱톡 계정에 올리는 화면.<br>
 The creator's page for posting finished Injeolmi Kongi animations to their own TikTok account.</p>
 
@@ -63,7 +63,7 @@ The creator's page for posting finished Injeolmi Kongi animations to their own T
   <p id="status" class="muted"></p>
 </section>
 
-<p class="muted"><a href="./">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></p>
+<p class="muted"><a href="./">Home</a> · <a href="privacy-policy">Privacy Policy</a> · <a href="terms-of-service">Terms of Service</a></p>
 
 <script>
 const HELPER = 'http://127.0.0.1:8765';
@@ -80,7 +80,7 @@ async function get(path) {
 async function start() {
   let cfg;
   try { cfg = await get('/config'); }
-  catch { $('helper-msg').textContent = '이 컴퓨터의 Kongi Studio 도우미가 꺼져 있음 · The local Kongi Studio helper is not running.'; return; }
+  catch { $('helper-msg').textContent = '이 컴퓨터의 Injeolmi Kongi 도우미가 꺼져 있음 · The local Injeolmi Kongi helper is not running.'; return; }
   $('login').disabled = false;
   $('login').onclick = () => {
     const state = crypto.randomUUID();
